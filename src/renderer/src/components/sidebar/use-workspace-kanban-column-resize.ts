@@ -64,6 +64,7 @@ export function useWorkspaceKanbanColumnResize(
   const resizeChangedRef = useRef(false)
   const startXRef = useRef(0)
   const startWidthRef = useRef(columnWidth)
+  const startSizingRef = useRef({ columnWidth, manuallyResized })
   const draftWidthRef = useRef(columnWidth)
   const frameRef = useRef<number | null>(null)
 
@@ -86,10 +87,13 @@ export function useWorkspaceKanbanColumnResize(
   }, [])
 
   const publishDraftWidth = useCallback((width: number) => {
-    const nextWidth = Math.min(
-      maxWidthRef.current,
-      Math.max(WORKSPACE_BOARD_COLUMN_WIDTH_MIN, Math.round(width))
-    )
+    const nextWidth =
+      resizingRef.current && width === startWidthRef.current
+        ? width
+        : Math.min(
+            maxWidthRef.current,
+            Math.max(WORKSPACE_BOARD_COLUMN_WIDTH_MIN, Math.round(width))
+          )
     if (nextWidth === draftWidthRef.current) {
       return
     }
@@ -127,7 +131,10 @@ export function useWorkspaceKanbanColumnResize(
       frameRef.current = null
     }
     resetDocumentStyles()
-    if (resizeChangedRef.current) {
+    if (draftWidthRef.current === startWidthRef.current) {
+      setColumnWidth(startSizingRef.current.columnWidth)
+      setManuallyResized(startSizingRef.current.manuallyResized)
+    } else if (resizeChangedRef.current) {
       commitDraftWidth()
     }
   }, [commitDraftWidth, resetDocumentStyles])
@@ -140,7 +147,7 @@ export function useWorkspaceKanbanColumnResize(
       ) {
         return
       }
-      publishDraftWidth(startWidthRef.current + event.clientX - startXRef.current)
+      publishDraftWidth(startWidthRef.current + (event.clientX - startXRef.current))
     },
     [publishDraftWidth]
   )
@@ -180,11 +187,12 @@ export function useWorkspaceKanbanColumnResize(
       setIsResizingColumn(true)
       startXRef.current = event.clientX
       startWidthRef.current = displayedWidth
+      startSizingRef.current = { columnWidth, manuallyResized }
       draftWidthRef.current = displayedWidth
       document.body.style.cursor = 'col-resize'
       document.body.style.userSelect = 'none'
     },
-    [displayedWidth]
+    [columnWidth, displayedWidth, manuallyResized]
   )
 
   const onColumnResizeKeyDown = useCallback(

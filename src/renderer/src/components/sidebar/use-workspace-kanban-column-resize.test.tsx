@@ -125,6 +125,82 @@ it('ignores no-op clicks and starts pointer resizing at the displayed width', ()
   expect(width()).toBe(420)
 })
 
+it.each(
+  [
+    { viewport: 1636, count: 4, displayed: 400, dragged: 370, resized: 450 },
+    { viewport: 1636, count: 2, displayed: 812, dragged: 782, resized: 912 },
+    { viewport: 1636.5, count: 2, displayed: 812.25, dragged: 782, resized: 912.25 },
+    { viewport: 1636, count: 3, displayed: 537.3333333333334, dragged: 507, resized: 604 }
+  ].flatMap((layout) => [false, true].map((preview) => ({ ...layout, preview })))
+)(
+  'keeps automatic sizing after an out-and-back drag at $displayed px (preview: $preview)',
+  ({ viewport, count, displayed, dragged, resized, preview }) => {
+    let flushFrame = () => {}
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      flushFrame = () => callback(performance.now())
+      return 1
+    })
+    viewportWidth = viewport
+    const view = render(<Columns count={count} />)
+    expect(width()).toBe(displayed)
+    fireEvent.pointerDown(screen.getByRole('button'), { button: 0, clientX: 500 })
+    fireEvent.pointerMove(window, { clientX: 470 })
+    if (preview) {
+      act(() => flushFrame())
+      expect(width()).toBe(dragged)
+    }
+    fireEvent.pointerMove(window, { clientX: 500 })
+    if (preview) {
+      act(() => flushFrame())
+    }
+    fireEvent.pointerUp(window)
+    expect(width()).toBe(displayed)
+    expect(preference).toBe(308)
+    expect(commit).not.toHaveBeenCalled()
+    expect(document.body.style.cursor).toBe('')
+    resizeViewport(viewport + 200)
+    expect(width()).toBe(resized)
+    view.rerender(<Columns count={count} expand={false} />)
+    expect(width()).toBe(308)
+  }
+)
+
+it('keeps an existing manual choice after an out-and-back drag', () => {
+  let flushFrame = () => {}
+  vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+    flushFrame = () => callback(performance.now())
+    return 1
+  })
+  const view = render(<Columns count={2} />)
+  fireEvent.keyDown(screen.getByRole('button'), { key: 'ArrowLeft' })
+  expect(width()).toBe(792)
+  expect(preference).toBe(520)
+  commit.mockClear()
+  fireEvent.pointerDown(screen.getByRole('button'), { button: 0, clientX: 500 })
+  fireEvent.pointerMove(window, { clientX: 470 })
+  act(() => flushFrame())
+  expect(width()).toBe(762)
+  fireEvent.pointerMove(window, { clientX: 500 })
+  act(() => flushFrame())
+  fireEvent.pointerUp(window)
+  expect(width()).toBe(792)
+  expect(preference).toBe(520)
+  expect(commit).not.toHaveBeenCalled()
+  resizeViewport(1836)
+  expect(width()).toBe(792)
+  view.rerender(<Columns count={2} expand={false} />)
+  expect(width()).toBe(520)
+  fireEvent.pointerDown(screen.getByRole('button'), { button: 0, clientX: 500 })
+  fireEvent.pointerMove(window, { clientX: 470 })
+  act(() => flushFrame())
+  fireEvent.pointerMove(window, { clientX: 500 })
+  act(() => flushFrame())
+  fireEvent.pointerUp(window)
+  expect(width()).toBe(520)
+  view.rerender(<Columns count={2} />)
+  expect(width()).toBe(792)
+})
+
 it('discards an uncommitted pointer draft when closed and reopened with the sidebar visible', () => {
   let flushFrame = () => {}
   vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
