@@ -13,7 +13,7 @@ vi.mock('./WorktreeList', () => ({ default: () => null }))
 vi.mock('./LocalGitToolchainScanBanner', () => ({ LocalGitToolchainScanBanner: () => null }))
 vi.mock('./useSidebarProjectDrop', () => ({
   useSidebarProjectDrop: () => ({
-    nativeDropTarget: undefined,
+    dropOwnerRef: vi.fn(),
     dropHandlers: {},
     affordance: { visible: false }
   })
