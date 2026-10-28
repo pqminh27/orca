@@ -29,6 +29,7 @@ type WorkspaceKanbanStatusLaneProps = {
   repoMap: Map<string, Repo>
   activeWorktreeIdentity: string | null
   columnWidth: number
+  columnWidthMax?: number
   isResizingColumn: boolean
   isDragTarget: boolean
   nativeDragEnabled?: boolean
@@ -59,6 +60,7 @@ function WorkspaceKanbanStatusLane({
   repoMap,
   activeWorktreeIdentity,
   columnWidth,
+  columnWidthMax = WORKSPACE_BOARD_COLUMN_WIDTH_MAX,
   isResizingColumn,
   isDragTarget,
   nativeDragEnabled = true,
@@ -140,7 +142,7 @@ function WorkspaceKanbanStatusLane({
           'Resize workspace board columns'
         )}
         aria-valuemin={WORKSPACE_BOARD_COLUMN_WIDTH_MIN}
-        aria-valuemax={WORKSPACE_BOARD_COLUMN_WIDTH_MAX}
+        aria-valuemax={columnWidthMax}
         aria-valuenow={columnWidth}
         tabIndex={0}
         className={cn(
